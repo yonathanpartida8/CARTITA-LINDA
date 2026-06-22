@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Carta de Amor 3D - Hello Kitty</title>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: #f08c8c;
+            --text-light: #f0e6e6;
+            --text-soft: #d4c5c5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #2a1e2e;
+            overflow: hidden;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            font-family: 'Caveat', 'Georgia', serif;
+            height: 100dvh;
+            width: 100vw;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        #bg-layer {
+            position: fixed;
+            top: -10px;
+            left: -10px;
+            width: calc(100% + 20px);
+            height: calc(100% + 20px);
+            background: url('fondo.png') center/cover no-repeat;
+            filter: blur(15px) brightness(0.5);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #tap-hint {
+            pointer-events: auto;
+            cursor: pointer;
+            text-align: center;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #tap-hint.hidden {
+            opacity: 0;
+            transform: translateY(-30px);
+            pointer-events: none;
+        }
+
+        #tap-hint .pulse-ring {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            margin: 0 auto 18px;
+            animation: pulse-ring 2s ease-in-out infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(240, 140, 140, 0.4);
+        }
+
+        #tap-hint .pulse-dot {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse-dot 2s ease-in-out infinite;
+            box-shadow: 0 0 15px rgba(240, 140, 140, 0.8);
+        }
+
+        @keyframes pulse-ring {
+            0%,
+            100% {
+                transform: scale(0.85);
+                opacity: 0.6;
+            }
+            50% {
+                transform: scale(1.25);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                transform: scale(0.8);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.3);
+                opacity: 1;
+            }
+        }
+
+        #tap-hint .hint-text {
+            font-size: clamp(1.4rem, 3.5vw, 1.8rem);
+            color: var(--text-light);
+            letter-spacing: 0.06em;
+            text-shadow: 0 0 15px rgba(240, 140, 140, 0.7), 0 2px 4px rgba(0, 0, 0, 0.5);
+            animation: hint-float 3s ease-in-out infinite;
+        }
+
+        @keyframes hint-float {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        #love-message {
+            position: fixed;
+            bottom: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+            color: var(--text-soft);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 1.5s ease 0.5s;
+            pointer-events: none;
+            z-index: 11;
+            letter-spacing: 0.04em;
+            text-shadow: 0 0 12px rgba(230, 184, 123, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+        }
+
+        #love-message.visible {
+            opacity: 1;
+        }
+
+        #music-toggle {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 20;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(30, 30, 50, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1.5px solid var(--accent);
+            color: var(--accent);
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 0 15px rgba(240, 140, 140, 0.3);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        #music-toggle.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #music-toggle:active {
+            background: rgba(60, 40, 50, 0.8);
+            transform: scale(0.9);
+        }
+    </style>
+</head>
+<body>
+    <div id="bg-layer"></div>
+    <div id="vignette"></div>
+    <div id="canvas-container"></div>
+    <div id="ui-overlay">
+        <div id="tap-hint">
+            <div class="pulse-ring">
+                <div class="pulse-dot"></div>
+            </div>
+            <p class="hint-text">Presiona para descubrir ✨</p>
+        </div>
+    </div>
+    <div id="love-message">💌 Desliza para mover tu carta 💌</div>
+    <button id="music-toggle" aria-label="Activar música">🎵</button>
+
+    <audio id="bg-music" loop preload="auto" src="musica.mp3"></audio>
+    <audio id="sfx-fire" preload="auto" src="fire.mp3"></audio>
+    <audio id="sfx-open" preload="auto" src="open.mp3"></audio>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.157.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // ==================== DOM ELEMENTS ====================
+        const container = document.getElementById('canvas-container');
+        const tapHint = document.getElementById('tap-hint');
+        const loveMessage = document.getElementById('love-message');
+        const musicToggle = document.getElementById('music-toggle');
+
+        // ==================== AUDIO SYSTEM ====================
+        const bgMusic = document.getElementById('bg-music');
+        const sfxFire = document.getElementById('sfx-fire');
+        const sfxOpen = document.getElementById('sfx-open');
+
+        bgMusic.volume = 0.4;
+        sfxFire.volume = 0.5;
+        sfxOpen.volume = 0.55;
+
+        let musicStarted = false;
+        let musicPlaying = false;
+
+        function playSfx(audioElement) {
+            if (!audioElement) return;
+            const clone = audioElement.cloneNode();
+            clone.volume = audioElement.volume;
+            clone.play().catch(e => console.log('Error reproduciendo sonido:', e));
+            clone.onended = () => clone.remove();
+        }
+
+        function toggleMusic() {
+            if (!musicStarted) {
+                bgMusic.play().then(() => {
+                    musicStarted = true;
+                    musicPlaying = true;
+                    musicToggle.textContent = '🔊';
+                    musicToggle.classList.add('show');
+                }).catch(() => {
+                    musicToggle.textContent = '🎵';
+                    musicToggle.classList.add('show');
+                });
+                return;
+            }
+            if (musicPlaying) {
+                bgMusic.pause();
+                musicPlaying = false;
+                musicToggle.textContent = '🔇';
+            } else {
+                bgMusic.play().then(() => {
+                    musicPlaying = true;
+                    musicToggle.textContent = '🔊';
+                }).catch(() => {});
+            }
+        }
+
+        function tryStartMusic() {
+            if (!musicStarted) {
+                bgMusic.play().then(() => {
+                    musicStarted = true;
+                    musicPlaying = true;
+                    musicToggle.textContent = '🔊';
+                    musicToggle.classList.add('show');
+                }).catch(() => {
+                    musicToggle.classList.add('show');
+                    musicToggle.textContent = '🎵';
+                });
+            }
+        }
+
+        musicToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleMusic();
+        });
+        musicToggle.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMusic();
+        });
+
+        // ==================== THREE.JS SETUP ====================
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0);
+        renderer.domElement.style.touchAction = 'none';
+        container.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 20);
+        camera.position.set(0, 0.15, 4.2);
+        camera.lookAt(0, 0, 0);
+
+        scene.add(new THREE.AmbientLight('#fff5ee', 1.6));
+        const keyLight = new THREE.DirectionalLight('#ffffff', 2.0);
+        keyLight.position.set(2, 3, 3);
+        scene.add(keyLight);
+        const fillLight = new THREE.DirectionalLight('#ffe0d0', 1.2);
+        fillLight.position.set(-2, -0.5, 2);
+        scene.add(fillLight);
+        const rimLight = new THREE.DirectionalLight('#ffccbb', 1.4);
+        rimLight.position.set(0, -0.5, -1.5);
+        scene.add(rimLight);
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.far = 8;
+        const mouse = new THREE.Vector2();
+
+        function getNDCFromEvent(e) {
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+            return mouse;
+        }
+
+        // ==================== TEXTURE GENERATION ====================
+        function createPaperTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 600;
+            canvas.height = 820;
+            const ctx = canvas.getContext('2d');
+
+            const paperGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            paperGrad.addColorStop(0, '#fffbf5');
+            paperGrad.addColorStop(0.4, '#fdf4e3');
+            paperGrad.addColorStop(0.7, '#faf0db');
+            paperGrad.addColorStop(1, '#f5e8cc');
+            ctx.fillStyle = paperGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < 8000; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const alpha = Math.random() * 0.04;
+                const shade = 180 + Math.random() * 75;
+                ctx.fillStyle = `rgba(${shade},${shade * 0.85},${shade * 0.6},${alpha})`;
+                ctx.fillRect(x, y, 1.5 + Math.random() * 2, 1.5 + Math.random() * 2);
+            }
+
+            for (let i = 0; i < 6; i++) {
+                const cx = Math.random() * canvas.width;
+                const cy = Math.random() * canvas.height;
+                const r = 40 + Math.random() * 120;
+                const spotGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+                spotGrad.addColorStop(0, 'rgba(200,170,130,0.04)');
+                spotGrad.addColorStop(0.6, 'rgba(180,150,110,0.02)');
+                spotGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = spotGrad;
+                ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+            }
+
+            const margin = 25;
+            const w = canvas.width - margin * 2;
+            const h = canvas.height - margin * 2;
+            ctx.strokeStyle = 'rgba(210,160,140,0.45)';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([8, 6]);
+            ctx.strokeRect(margin, margin, w, h);
+            ctx.setLineDash([]);
+            ctx.strokeStyle = 'rgba(190,140,120,0.25)';
+            ctx.lineWidth = 1.2;
+            ctx.strokeRect(margin - 7, margin - 7, w + 14, h + 14);
+
+            return { canvas, ctx };
+        }
+
+        function drawHelloKitty(ctx, cx, cy, scale) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(scale, scale);
+            const oc = '#2b2b2b';
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = oc;
+            ctx.fillStyle = '#fff';
+
+            ctx.beginPath();
+            ctx.moveTo(-16, -10);
+            ctx.lineTo(-24, -30);
+            ctx.lineTo(-4, -20);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(16, -10);
+            ctx.lineTo(24, -30);
+            ctx.lineTo(4, -20);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 32, 23, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = oc;
+            ctx.beginPath();
+            ctx.ellipse(-14, 4, 3, 4.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(14, 4, 3, 4.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffcc00';
+            ctx.strokeStyle = '#d69e00';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.ellipse(0, 8, 4.5, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.strokeStyle = oc;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            [
+                [-31, 0, -42, -4],
+                [-32, 4, -43, 4],
+                [-31, 8, -42, 12]
+            ].forEach(w => { ctx.beginPath();
+                ctx.moveTo(w[0], w[1]);
+                ctx.lineTo(w[2], w[3]);
+                ctx.stroke(); });
+            [
+                [31, 0, 42, -4],
+                [32, 4, 43, 4],
+                [31, 8, 42, 12]
+            ].forEach(w => { ctx.beginPath();
+                ctx.moveTo(w[0], w[1]);
+                ctx.lineTo(w[2], w[3]);
+                ctx.stroke(); });
+
+            ctx.fillStyle = '#ff2a2a';
+            ctx.strokeStyle = oc;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(13, -19, 9, 7.5, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(29, -17, 9, 7.5, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(21, -18, 5, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(13, -19);
+            ctx.lineTo(17, -18);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(29, -17);
+            ctx.lineTo(25, -18);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function createLetterTexture() {
+            const { canvas, ctx } = createPaperTexture();
+            [
+                [65, 65],
+                [canvas.width - 65, 65],
+                [65, canvas.height - 65],
+                [canvas.width - 65, canvas.height - 65]
+            ].forEach(p => drawHelloKitty(ctx, p[0], p[1], 0.85));
+
+            function heart(cx, cy, s, color) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy + s * 0.3);
+                ctx.bezierCurveTo(cx - s, cy - s * 0.5, cx - s * 0.8, cy - s, cx, cy - s * 0.2);
+                ctx.bezierCurveTo(cx + s * 0.8, cy - s, cx + s, cy - s * 0.5, cx, cy + s * 0.3);
+                ctx.fill();
+            }
+            const hc = ['rgba(240,120,120,0.5)', 'rgba(255,160,160,0.45)', 'rgba(230,100,110,0.4)',
+                'rgba(245,140,150,0.5)'
+            ];
+            for (let i = 0; i < 22; i++) heart(45 + Math.random() * (canvas.width - 90), 45 + Math.random() * (canvas
+                .height - 90), 5 + Math.random() * 13, hc[Math.floor(Math.random() * hc.length)]);
+
+            const lines = [
+  'Te amo muchote, mi amorcito,', '',
+  'No importa cuántos kilómetros nos separen,',
+  'porque te siento conmigo en cada paso.',
+  'Eres quien ilumina mis días grises',
+  'y quien le pone música a mi vida.', '',
+  'Mirando atrás, estos meses juntos',
+  'han sido el mejor regalo que he recibido.',
+  'Cada recuerdo es una pieza clave',
+  'de lo que somos.', '',
+  'Eres mi persona favorita,',
+  'mi inspiración y mi hogar.', '',
+  'Te amo muchísimo.', '',
+  'Tuyo, ahora y siempre 💕'
+];
+
+            ctx.fillStyle = '#4a3530';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 28px "Caveat", cursive';
+            const sy = canvas.height / 2 - ((lines.length - 1) * 36) / 2;
+            lines.forEach((l, i) => { if (l) ctx.fillText(l, canvas.width / 2, sy + i * 36); });
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // ==================== 3D OBJECTS ====================
+        function createEnvelopeGroup() {
+            const g = new THREE.Group();
+            g.name = 'envelopeGroup';
+            const b = new THREE.Mesh(new THREE.BoxGeometry(1.65, 1.1, 0.04), new THREE.MeshStandardMaterial({ color: '#f2e1cc',
+                roughness: 0.4 }));
+            b.name = 'envelopeBodyMesh';
+            g.add(b);
+
+            const fs = new THREE.Shape();
+            fs.moveTo(-0.82, 0.54);
+            fs.lineTo(0.82, 0.54);
+            fs.lineTo(0, -0.22);
+            fs.closePath();
+            const f = new THREE.Mesh(new THREE.ShapeGeometry(fs), new THREE.MeshStandardMaterial({ color: '#ecd7c0',
+                roughness: 0.4, side: THREE.DoubleSide }));
+            f.position.z = 0.022;
+            f.name = 'envelopeFlapMesh';
+            g.add(f);
+
+            for (let s = -1; s <= 1; s += 2) {
+                const ss = new THREE.Shape();
+                ss.moveTo(s * 0.82, 0.3);
+                ss.lineTo(s * 0.82, -0.45);
+                ss.lineTo(s * 0.35, 0.05);
+                ss.closePath();
+                const sm = new THREE.Mesh(new THREE.ShapeGeometry(ss), new THREE.MeshStandardMaterial({ color: '#e6cdb3',
+                    roughness: 0.4, side: THREE.DoubleSide }));
+                sm.position.z = 0.015;
+                sm.name = `envelopeSideMesh_${s}`;
+                g.add(sm);
+            }
+
+            const hs = 0.14;
+            const hShape = new THREE.Shape();
+            hShape.moveTo(0, hs * 0.35);
+            hShape.bezierCurveTo(0, hs * 0.35, -hs, -hs * 0.3, -hs * 0.5, -hs * 0.55);
+            hShape.bezierCurveTo(-hs * 0.5, -hs * 0.55, -hs * 0.05, -hs * 1.1, 0, -hs * 0.7);
+            hShape.bezierCurveTo(hs * 0.05, -hs * 1.1, hs * 0.5, -hs * 0.55, hs * 0.5, -hs * 0.55);
+            hShape.bezierCurveTo(hs, -hs * 0.3, 0, hs * 0.35, 0, hs * 0.35);
+            const h = new THREE.Mesh(new THREE.ShapeGeometry(hShape), new THREE.MeshStandardMaterial({ color: '#d44848',
+                roughness: 0.25 }));
+            h.position.set(0, 0.08, 0.026);
+            h.name = 'envelopeSealMesh';
+            g.add(h);
+            const r = new THREE.Mesh(new THREE.TorusGeometry(hs * 0.55, 0.012, 8, 20), new THREE.MeshStandardMaterial({
+                color: '#c03030',
+                roughness: 0.2 }));
+            r.position.copy(h.position);
+            r.position.z += 0.003;
+            r.name = 'envelopeRingMesh';
+            g.add(r);
+            return g;
+        }
+
+        function createSparkParticles(count = 200) {
+            const geo = new THREE.BufferGeometry();
+            const pos = new Float32Array(count * 3);
+            const col = new Float32Array(count * 3);
+            for (let i = 0; i < count; i++) { pos[i * 3] = 0;
+                pos[i * 3 + 1] = -999;
+                pos[i * 3 + 2] = 0;
+                col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = 0; }
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+            const mat = new THREE.PointsMaterial({ size: 0.05, blending: THREE.AdditiveBlending, depthWrite: false,
+                vertexColors: true, transparent: true, opacity: 0.95, sizeAttenuation: true });
+            const pts = new THREE.Points(geo, mat);
+            pts.visible = false;
+            const data = [];
+            for (let i = 0; i < count; i++) data.push({ life: 0, maxLife: 0.6 + Math.random() * 1.8, velocity: new THREE.Vector3(),
+                baseColor: new THREE.Color() });
+            return { points: pts, particleData: data, count };
+        }
+
+        function resetSparkParticle(pd, envPos) {
+            pd.life = 1;
+            pd.maxLife = 0.5 + Math.random() * 1.8;
+            const ox = envPos.x + (Math.random() - 0.5) * 1.7;
+            const oy = envPos.y + (Math.random() - 0.5) * 1.2;
+            const oz = envPos.z + (Math.random() - 0.5) * 0.3;
+            pd.velocity.set((Math.random() - 0.5) * 0.9, 1.5 + Math.random() * 2.8, (Math.random() - 0.5) * 0.7);
+            pd.baseColor.setHSL(0.06 + Math.random() * 0.1, 0.85 + Math.random() * 0.15, 0.5 + Math.random() * 0.5);
+            return { ox, oy, oz };
+        }
+
+        // ==================== SHADERS ====================
+        const vShader = `
+        varying vec2 vUv;
+        varying vec3 vWorldPos;
+        varying vec3 vNormal;
+        void main() {
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorldPos = wp.xyz;
+            vUv = uv;
+            vNormal = normalize(mat3(modelMatrix) * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`;
+
+        const fShader = `
+        varying vec2 vUv;
+        varying vec3 vWorldPos;
+        varying vec3 vNormal;
+        uniform float uTime, uProgress, uNoiseScale, uGlowWidth, uFireIntensity;
+        uniform vec3 uColor;
+        vec3 m289(vec3 x) { return x - floor(x * (1.0/289.0)) * 289.0; }
+        vec4 m289(vec4 x) { return x - floor(x * (1.0/289.0)) * 289.0; }
+        vec4 perm(vec4 x) { return m289(((x*34.0)+1.0)*x); }
+        vec4 tInv(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+        float snoise(vec3 v) {
+            const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+            const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+            vec3 i = floor(v + dot(v, C.yyy));
+            vec3 x0 = v - i + dot(i, C.xxx);
+            vec3 g = step(x0.yzx, x0.xyz);
+            vec3 l = 1.0 - g;
+            vec3 i1 = min(g.xyz, l.zxy);
+            vec3 i2 = max(g.xyz, l.zxy);
+            vec3 x1 = x0 - i1 + C.xxx;
+            vec3 x2 = x0 - i2 + C.yyy;
+            vec3 x3 = x0 - D.yyy;
+            i = m289(i);
+            vec4 p = perm(perm(perm(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+            float n_ = 0.142857142857;
+            vec3 ns = n_ * D.wyz - D.xzx;
+            vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+            vec4 x_ = floor(j * ns.z);
+            vec4 y_ = floor(j - 7.0 * x_);
+            vec4 x = x_ * ns.x + ns.yyyy;
+            vec4 y = y_ * ns.x + ns.yyyy;
+            vec4 h = 1.0 - abs(x) - abs(y);
+            vec4 b0 = vec4(x.xy, y.xy);
+            vec4 b1 = vec4(x.zw, y.zw);
+            vec4 s0 = floor(b0)*2.0 + 1.0;
+            vec4 s1 = floor(b1)*2.0 + 1.0;
+            vec4 sh = -step(h, vec4(0.0));
+            vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+            vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+            vec3 p0 = vec3(a0.xy, h.x);
+            vec3 p1 = vec3(a0.zw, h.y);
+            vec3 p2 = vec3(a1.xy, h.z);
+            vec3 p3 = vec3(a1.zw, h.w);
+            vec4 norm = tInv(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+            p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+            vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+            m = m*m;
+            return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+        }
+        void main() {
+            float n = snoise(vec3(vWorldPos.xy * uNoiseScale * 0.8, vWorldPos.z * uNoiseScale * 0.5 + uTime * 0.4));
+            float n2 = snoise(vec3(vUv * uNoiseScale, uTime * 0.25));
+            float fn = n * 0.7 + n2 * 0.3;
+            float th = uProgress * 1.6 - 0.8;
+            if (fn < th) discard;
+            float ed = fn - th;
+            float edge = 1.0 - smoothstep(0.0, uGlowWidth, ed);
+            vec3 fireOuter = vec3(1.0, 0.8, 0.2);
+            vec3 fireMid = vec3(1.0, 0.55, 0.08);
+            vec3 fireCore = vec3(1.0, 0.25, 0.02);
+            float fireGrad = 1.0 - edge;
+            vec3 fireColor = mix(fireOuter, fireMid, smoothstep(0.3, 0.7, fireGrad));
+            fireColor = mix(fireColor, fireCore, smoothstep(0.7, 1.0, fireGrad));
+            fireColor *= uFireIntensity;
+            vec3 finalColor = mix(uColor, fireColor, edge * 0.9) + fireColor * edge * 0.6;
+            float nd = abs(dot(vNormal, normalize(vec3(0.5, 1.0, 0.8))));
+            finalColor *= 0.5 + nd * 0.5;
+            gl_FragColor = vec4(finalColor, 1.0 - edge * 0.15);
+        }`;
+
+        function createDissolveMaterial(hex) {
+            return new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uProgress: { value: 0 },
+                    uColor: { value: new THREE.Color(hex) },
+                    uNoiseScale: { value: 4.5 },
+                    uGlowWidth: { value: 0.07 },
+                    uFireIntensity: { value: 1.5 }
+                },
+                vertexShader: vShader,
+                fragmentShader: fShader,
+                transparent: true,
+                depthWrite: true,
+                side: THREE.DoubleSide
+            });
+        }
+
+        // ==================== BUILD SCENE ====================
+        const envelopeGroup = createEnvelopeGroup();
+        scene.add(envelopeGroup);
+
+        const letterGroup = new THREE.Group();
+        letterGroup.visible = false;
+        letterGroup.rotation.x = -Math.PI / 2.2;
+        letterGroup.scale.set(0.01, 0.01, 0.01);
+        letterGroup.position.set(0, 0, -0.02);
+        scene.add(letterGroup);
+
+        const letterTexture = createLetterTexture();
+        letterTexture.colorSpace = THREE.SRGBColorSpace;
+        letterTexture.minFilter = THREE.LinearMipmapLinearFilter;
+        letterTexture.magFilter = THREE.LinearFilter;
+        letterTexture.generateMipmaps = true;
+
+        const letterPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.35, 1.85),
+            new THREE.MeshStandardMaterial({ map: letterTexture, roughness: 0.55, side: THREE.DoubleSide })
+        );
+        letterGroup.add(letterPlane);
+
+        const backPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.38, 1.88),
+            new THREE.MeshStandardMaterial({ color: '#e8d5c0', roughness: 0.6, side: THREE.DoubleSide })
+        );
+        backPlane.position.z = -0.015;
+        letterGroup.add(backPlane);
+
+        const sparkSystem = createSparkParticles(200);
+        sparkSystem.points.position.copy(envelopeGroup.position);
+        scene.add(sparkSystem.points);
+
+        // ==================== STATE MANAGEMENT ====================
+        const state = {
+            phase: 'envelope', // 'envelope' | 'dissolving' | 'letter'
+            dissolveProgress: 0,
+            dissolveStartTime: 0,
+            dissolveDuration: 1.8,
+            letterRevealProgress: 0,
+            letterRevealStartTime: 0,
+            letterRevealDelay: 0.9,
+            letterRevealDuration: 1.2,
+            isDraggingLetter: false,
+            prevTouchX: 0,
+            prevTouchY: 0,
+            targetRotX: 0,
+            targetRotY: 0,
+            currentRotX: 0,
+            currentRotY: 0,
+            dragAccumX: 0,
+            dragAccumY: 0,
+            floatTime: 0,
+            sparksActive: false,
+            transitionDone: false,
+            _envelopeDissolveMeshes: null,
+            fireSfxPlayed: false,
+            openSfxPlayed: false
+        };
+
+        function startDissolve() {
+            if (state.phase !== 'envelope') return;
+            state.phase = 'dissolving';
+            state.dissolveProgress = 0;
+            state.dissolveStartTime = performance.now() / 1000;
+            state.letterRevealStartTime = state.dissolveStartTime + state.letterRevealDelay;
+            state.sparksActive = true;
+            state.transitionDone = false;
+            state.fireSfxPlayed = false;
+            state.openSfxPlayed = false;
+            tapHint.classList.add('hidden');
+
+            // Reproducir sonido de fuego
+            playSfx(sfxFire);
+
+            const envelopeMeshes = [];
+            envelopeGroup.traverse(c => {
+                if (c.isMesh && c.name.includes('envelope')) envelopeMeshes.push(c);
+            });
+            envelopeMeshes.forEach(mesh => {
+                const origColor = mesh.material.color ? '#' + mesh.material.color.getHexString() : '#f2e1cc';
+                const dissMat = createDissolveMaterial(origColor);
+                dissMat.uniforms.uTime.value = state.dissolveStartTime;
+                dissMat.uniforms.uProgress.value = 0;
+                mesh.material = dissMat;
+                mesh.userData.dissolveMaterial = dissMat;
+            });
+            state._envelopeDissolveMeshes = envelopeMeshes;
+
+            sparkSystem.points.visible = true;
+            const envWorldPos = new THREE.Vector3();
+            envelopeGroup.getWorldPosition(envWorldPos);
+            for (let i = 0; i < sparkSystem.count; i++) {
+                resetSparkParticle(sparkSystem.particleData[i], envWorldPos);
+            }
+
+            letterGroup.visible = true;
+            letterGroup.rotation.x = -Math.PI / 2.2;
+            letterGroup.scale.set(0.01, 0.01, 0.01);
+        }
+
+        function finishTransition() {
+            if (state.transitionDone) return;
+            state.transitionDone = true;
+            state.phase = 'letter';
+            state.sparksActive = false;
+            sparkSystem.points.visible = false;
+            envelopeGroup.visible = false;
+
+            // Sonido de apertura
+            if (!state.openSfxPlayed) {
+                playSfx(sfxOpen);
+                state.openSfxPlayed = true;
+            }
+
+            loveMessage.classList.add('visible');
+            letterGroup.rotation.set(0, 0, 0);
+            letterGroup.scale.set(1, 1, 1);
+            letterGroup.position.z = 0.15;
+            state.currentRotX = state.currentRotY = state.targetRotX = state.targetRotY = 0;
+        }
+
+        // ==================== EVENT HANDLERS ====================
+        function handleInteractionStart(e) {
+            e.preventDefault();
+            tryStartMusic();
+            const ndc = getNDCFromEvent(e);
+            raycaster.setFromCamera(ndc, camera);
+
+            if (state.phase === 'envelope') {
+                const meshes = [];
+                envelopeGroup.traverse(c => { if (c.isMesh) meshes.push(c); });
+                if (raycaster.intersectObjects(meshes, false).length > 0) {
+                    startDissolve();
+                }
+            } else if (state.phase === 'letter') {
+                const intersects = raycaster.intersectObjects([letterPlane, backPlane], false);
+                if (intersects.length > 0) {
+                    state.isDraggingLetter = true;
+                    const pt = getNDCFromEvent(e);
+                    state.prevTouchX = pt.x;
+                    state.prevTouchY = pt.y;
+                    state.dragAccumX = 0;
+                    state.dragAccumY = 0;
+                }
+            }
+        }
+
+        function handleInteractionMove(e) {
+            e.preventDefault();
+            if (state.phase === 'letter' && state.isDraggingLetter) {
+                const pt = getNDCFromEvent(e);
+                const dx = pt.x - state.prevTouchX;
+                const dy = pt.y - state.prevTouchY;
+                state.prevTouchX = pt.x;
+                state.prevTouchY = pt.y;
+                state.dragAccumX += dx;
+                state.dragAccumY += dy;
+                state.targetRotY = THREE.MathUtils.clamp(state.dragAccumX * 1.8, -0.5, 0.5);
+                state.targetRotX = THREE.MathUtils.clamp(-state.dragAccumY * 1.8, -0.45, 0.45);
+            }
+        }
+
+        function handleInteractionEnd(e) {
+            e.preventDefault();
+            if (state.phase === 'letter' && state.isDraggingLetter) {
+                state.isDraggingLetter = false;
+                state.targetRotX = 0;
+                state.targetRotY = 0;
+                state.dragAccumX = 0;
+                state.dragAccumY = 0;
+            }
+        }
+
+        renderer.domElement.addEventListener('touchstart', handleInteractionStart, { passive: false });
+        renderer.domElement.addEventListener('touchmove', handleInteractionMove, { passive: false });
+        renderer.domElement.addEventListener('touchend', handleInteractionEnd);
+        renderer.domElement.addEventListener('touchcancel', handleInteractionEnd);
+        renderer.domElement.addEventListener('mousedown', handleInteractionStart);
+        window.addEventListener('mousemove', e => { if (state.isDraggingLetter) handleInteractionMove(e); });
+        window.addEventListener('mouseup', handleInteractionEnd);
+        window.addEventListener('mouseleave', handleInteractionEnd);
+
+        tapHint.addEventListener('click', () => { if (state.phase === 'envelope') startDissolve(); });
+        tapHint.addEventListener('touchend', e => { e.preventDefault(); if (state.phase === 'envelope') startDissolve(); });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ==================== ANIMATION LOOP ====================
+        const clock = new THREE.Clock();
+
+        function animate(ts) {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1);
+            const now = ts / 1000;
+
+            if (state.phase === 'envelope') {
+                state.floatTime += dt;
+                envelopeGroup.position.y = Math.sin(state.floatTime * 1.3) * 0.18;
+                envelopeGroup.rotation.y = Math.sin(state.floatTime * 0.7) * 0.15;
+                envelopeGroup.rotation.z = Math.cos(state.floatTime * 0.9) * 0.06;
+                envelopeGroup.rotation.x = Math.sin(state.floatTime * 0.55) * 0.08;
+            }
+
+            if (state.phase === 'dissolving') {
+                state.dissolveProgress = Math.min((now - state.dissolveStartTime) / state.dissolveDuration, 1.0);
+                if (state._envelopeDissolveMeshes) {
+                    state._envelopeDissolveMeshes.forEach(m => {
+                        if (m.userData.dissolveMaterial) {
+                            m.userData.dissolveMaterial.uniforms.uTime.value = now;
+                            m.userData.dissolveMaterial.uniforms.uProgress.value = state.dissolveProgress;
+                        }
+                    });
+                }
+
+                // Update sparks
+                if (state.sparksActive) {
+                    const envPos = new THREE.Vector3();
+                    envelopeGroup.getWorldPosition(envPos);
+                    const posArr = sparkSystem.points.geometry.attributes.position.array;
+                    const colArr = sparkSystem.points.geometry.attributes.color.array;
+
+                    for (let i = 0; i < sparkSystem.count; i++) {
+                        const pd = sparkSystem.particleData[i];
+                        pd.life -= dt / pd.maxLife;
+                        if (pd.life <= 0) {
+                            const { ox, oy, oz } = resetSparkParticle(pd, envPos);
+                            posArr[i * 3] = ox;
+                            posArr[i * 3 + 1] = oy;
+                            posArr[i * 3 + 2] = oz;
+                        } else {
+                            posArr[i * 3] += pd.velocity.x * dt;
+                            posArr[i * 3 + 1] += pd.velocity.y * dt;
+                            posArr[i * 3 + 2] += pd.velocity.z * dt;
+                            pd.velocity.y += 0.6 * dt;
+                            pd.velocity.x += (Math.random() - 0.5) * 0.6 * dt;
+                            pd.velocity.z += (Math.random() - 0.5) * 0.6 * dt;
+                        }
+                        const lf = Math.max(pd.life, 0);
+                        colArr[i * 3] = pd.baseColor.r * lf;
+                        colArr[i * 3 + 1] = pd.baseColor.g * lf * 0.8;
+                        colArr[i * 3 + 2] = pd.baseColor.b * lf * 0.4;
+                    }
+                    sparkSystem.points.geometry.attributes.position.needsUpdate = true;
+                    sparkSystem.points.geometry.attributes.color.needsUpdate = true;
+                    if (state.dissolveProgress > 0.75) {
+                        sparkSystem.points.material.opacity = 0.95 * (1 - (state.dissolveProgress - 0.75) / 0.25);
+                    }
+                }
+
+                // Reveal letter
+                const revealElapsed = now - state.letterRevealStartTime;
+                if (revealElapsed > 0) {
+                    state.letterRevealProgress = Math.min(revealElapsed / state.letterRevealDuration, 1.0);
+                    const ease = 1 - Math.pow(1 - state.letterRevealProgress, 3);
+                    letterGroup.rotation.x = -Math.PI / 2.2 * (1 - ease);
+                    letterGroup.scale.setScalar(0.01 + ease * 0.99);
+                    letterGroup.position.z = -0.02 + ease * 0.35;
+                }
+
+                // Trigger open sound once letter starts appearing
+                if (state.letterRevealProgress > 0.1 && !state.openSfxPlayed) {
+                    playSfx(sfxOpen);
+                    state.openSfxPlayed = true;
+                }
+
+                if (state.dissolveProgress >= 1.0 && state.letterRevealProgress >= 1.0 && !state.transitionDone) {
+                    finishTransition();
+                }
+            }
+
+            if (state.phase === 'letter') {
+                const damp = 0.12;
+                state.currentRotX += (state.targetRotX - state.currentRotX) * damp;
+                state.currentRotY += (state.targetRotY - state.currentRotY) * damp;
+                letterGroup.rotation.x = state.currentRotX;
+                letterGroup.rotation.y = state.currentRotY;
+                letterGroup.position.y = Math.sin(now * 0.9) * 0.05;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function init() {
+            const freshTexture = createLetterTexture();
+            freshTexture.colorSpace = THREE.SRGBColorSpace;
+            freshTexture.minFilter = THREE.LinearMipmapLinearFilter;
+            freshTexture.magFilter = THREE.LinearFilter;
+            freshTexture.generateMipmaps = true;
+            letterPlane.material.map = freshTexture;
+            letterPlane.material.needsUpdate = true;
+
+            musicToggle.classList.add('show');
+            requestAnimationFrame(animate);
+        }
+
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(init);
+        } else {
+            setTimeout(init, 600);
+        }
+
+        console.log('✨ Carta lista con sonidos, fondo y Hello Kitty!');
+    </script>
+</body>
+</html>
